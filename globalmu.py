@@ -87,7 +87,7 @@ def vote_request(sess, id, proxy):
 			{
 				"vote": id
 			}, proxies={'https':proxy}, timeout=10).json()
-
+		print(result)
 		if 'success' in result: 
 			return 10
 	except Exception as e:
