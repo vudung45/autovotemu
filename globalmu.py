@@ -3,7 +3,7 @@ import threading
 import time
 import json
 from random import choice
-
+from config import CONFIG
 
 #Parse basic settings
 vote_ids = [38,48,52,53]
@@ -37,62 +37,69 @@ def vote(username,password, proxies, lock):
 	proxy = None
 	if username not in balance:
 		balance[username] = 0
-	try:
-		login = False
+	login = False
 
-		while not login:
+	while not login:
+		try:
+			proxy = {}
+			if CONFIG.VOTE.login_proxy:
+				proxy = {'https': choice(proxies)}
 			text = sess.post('https://globalmu.net/account-panel/login', {
 				  "username" :  username,
 				  "password": password,
 				  "server": 'X50'
-				}, proxies={'https':choice(proxies)},timeout=10).text
+				}, proxies=proxy,timeout=10).text
+		except Exception as e:
+			print("Requests failed, trying again")
+			continue
 
-			if "My Credits" not in text:
-				login = False
-				print("Login failed")
-				time.sleep(2)
-			else:
-				print("Logged in successfully to account: "+username)
-				login = True
+		if "My Credits" not in text:
+			if "Wrong username" in text:
+				print("Wrong password/username for account: "+ username)
+				return
+			login = False
+			print("Login failed account:" + username)
+			time.sleep(2)
+		else:
+			print("Logged in successfully to account: "+username)
+			login = True
 
-		lock.acquire()
-		while len(proxies) > 0:
-			proxy = proxies.pop(0)
-			if proxy not in black_list:
-				break
-		lock.release()
 
-		if proxy is not None:
-			for id in vote_ids:
-				#try until succeed
-				success = False
-				while not success and len(proxies) > 0:
-					bonus = vote_request(sess,id, proxy)
-					if bonus != -1:
-						success = True
-						balance[username] += bonus
-						if proxy not in black_list: # add latest proxy if hasnt been added
-							lock.acquire()
-							black_list.append(proxy)
-							with open("blacklist.txt", "a+") as f:
-								f.write(proxy+"\n")
-								print("Blacklisting: "+proxy)
-							lock.release()
-					else:
+
+	lock.acquire()
+	while len(proxies) > 0:
+		proxy = proxies.pop(0)
+		if proxy not in black_list:
+			break
+	lock.release()
+
+	if proxy is not None:
+		for id in vote_ids:
+			#try until succeed
+			success = False
+			while not success and len(proxies) > 0:
+				bonus = vote_request(sess,id, proxy)
+				if bonus != -1:
+					success = True
+					balance[username] += bonus
+					if proxy not in black_list: # add latest proxy if hasnt been added
 						lock.acquire()
-						proxy = proxies.pop(0)
+						black_list.append(proxy)
+						with open("blacklist.txt", "a+") as f:
+							f.write(proxy+"\n")
+							print("Blacklisting: "+proxy)
 						lock.release()
-						time.sleep(1)
-						continue
-			lock.acquire()
-			with open("balance.json", "w") as f:
-				f.write(json.dumps(balance))
-			lock.release()
-			print("Finished voting for:" +username);
-	except KeyboardInterrupt:
-		return
-	except Exception as e:
-		print(e)
+				else:
+					lock.acquire()
+					proxy = proxies.pop(0)
+					lock.release()
+					time.sleep(1)
+					continue
+		lock.acquire()
+		with open("balance.json", "w") as f:
+			f.write(json.dumps(balance))
+		lock.release()
+		print("Finished voting for:" +username);
 
 def vote_request(sess, id, proxy):
 	print("using proxy: "+proxy)
