@@ -114,7 +114,6 @@ def buy_item(user, password, items, ignore, lock):
 	success = "successfully" in result
 	if success:
 		print("success")
-		regex = r"<span id=\"my_credits\">(.+)</span>"
 	else:
 		print("failed, trying again with different account")
 		lock.acquire()

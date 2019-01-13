@@ -37,11 +37,21 @@ def vote(username,password, proxies, lock):
 	if username not in balance:
 		balance[username] = 0
 	try:
-		sess.post('https://globalmu.net/account-panel/login', {
-			  "username" :  username,
-			  "password": password,
-			  "server": 'X50'
-			}, timeout=10)
+		login = False
+
+		while not login:
+			text = sess.post('https://globalmu.net/account-panel/login', {
+				  "username" :  username,
+				  "password": password,
+				  "server": 'X50'
+				}, timeout=10).text
+
+			if "My Credits" not in text:
+				login = False
+				time.sleep(1)
+			else:
+				print("Logged in successfully to account: "+username)
+				login = True
 
 		lock.acquire()
 		while len(proxies) > 0:
