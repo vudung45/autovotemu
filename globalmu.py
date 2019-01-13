@@ -10,6 +10,7 @@ vote_ids = [38,48,52,53]
 proxies = []
 black_list = []
 accounts = []
+ignore = []
 balance = {}
 
 with open("proxies.txt") as fo:
@@ -28,6 +29,9 @@ with open("accounts.txt") as fo:
 	lines = fo.read().splitlines()
 	for line in lines:
 		accounts += line.split(" ")
+
+with open("ignore.txt") as fo:
+	ignore = fo.read().splitlines()
 
 def vote(username,password, proxies, lock):
 	sess = requests.session()
@@ -49,6 +53,8 @@ def vote(username,password, proxies, lock):
 				  "password": password,
 				  "server": 'X50'
 				}, proxies=proxy,timeout=10).text
+		except KeyboardInterrupt:
+			break
 		except Exception as e:
 			print("Requests failed, trying again")
 			continue
@@ -63,8 +69,6 @@ def vote(username,password, proxies, lock):
 		else:
 			print("Logged in successfully to account: "+username)
 			login = True
-
-
 
 	lock.acquire()
 	while len(proxies) > 0:
@@ -96,8 +100,11 @@ def vote(username,password, proxies, lock):
 					time.sleep(1)
 					continue
 		lock.acquire()
+		ignore.append(username)
 		with open("balance.json", "w") as f:
 			f.write(json.dumps(balance))
+		with open("ignore.txt", "a+") as f:
+			f.write(username+"\n")
 		lock.release()
 		print("Finished voting for:" +username);
 
@@ -121,12 +128,13 @@ lock = threading.Lock()
 n_threads = 5
 for t in range(0,len(accounts),2 * n_threads):
 	threads = []
-	for i in range(t,t+2*n_threads,2):
-		try :
-			thread = threading.Thread(target = vote, args=(accounts[i],accounts[i+1],proxies, lock,))
-			threads.append(thread)
-			thread.start()
-			time.sleep(2)
+	for i in range(t,min(len(accounts) - 1,t+2*n_threads),2):
+		try:
+			if accounts[i] not in ignore:
+				thread = threading.Thread(target = vote, args=(accounts[i], accounts[i+1], proxies, lock,))
+				threads.append(thread)
+				thread.start()
+				time.sleep(2)
 		except KeyboardInterrupt:
 			break
 		except:
