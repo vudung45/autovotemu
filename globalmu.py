@@ -2,6 +2,7 @@ import requests
 import threading
 import time
 import json
+from random import choice
 
 
 #Parse basic settings
@@ -44,11 +45,12 @@ def vote(username,password, proxies, lock):
 				  "username" :  username,
 				  "password": password,
 				  "server": 'X50'
-				}, timeout=10).text
+				}, proxies={'https':choice(proxies)},timeout=10).text
 
 			if "My Credits" not in text:
 				login = False
-				time.sleep(1)
+				print("Login failed")
+				time.sleep(2)
 			else:
 				print("Logged in successfully to account: "+username)
 				login = True
@@ -87,6 +89,8 @@ def vote(username,password, proxies, lock):
 				f.write(json.dumps(balance))
 			lock.release()
 			print("Finished voting for:" +username);
+	except KeyboardInterrupt:
+		return
 	except Exception as e:
 		print(e)
 
@@ -116,6 +120,8 @@ for t in range(0,len(accounts),2 * n_threads):
 			threads.append(thread)
 			thread.start()
 			time.sleep(2)
+		except KeyboardInterrupt:
+			break
 		except:
 			continue
 

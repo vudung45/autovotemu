@@ -40,6 +40,8 @@ for t in range(0,len(accounts),2 * n_threads):
 			threads.append(thread)
 			thread.start()
 			time.sleep(2)
+		except KeyboardInterrupt:
+			break
 		except:
 			continue
 	for thread in threads:
