@@ -2,3 +2,4 @@ __pycache__
 *.pyc
 balance.json
 blacklist.txt
+ignore.txt
