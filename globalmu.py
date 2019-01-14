@@ -33,7 +33,7 @@ with open("accounts.txt") as fo:
 
 with open("ignore.txt") as fo:
 	ignore = fo.read().splitlines()
-shuffle(black_list)
+
 
 def vote(username,password, proxies, lock):
 	sess = requests.session()
@@ -54,9 +54,10 @@ def vote(username,password, proxies, lock):
 
 	#finished log in now add this account to ignore
 	lock.acquire()
-	ignore.append(username)
-	with open("ignore.txt", "a+") as f:
-		f.write(username+"\n")
+	if username not in ignore:
+		ignore.append(username)
+		with open("ignore.txt", "a+") as f:
+			f.write(username+"\n")
 	lock.release()
 
 
@@ -90,11 +91,8 @@ def vote(username,password, proxies, lock):
 					time.sleep(1)
 					continue
 		lock.acquire()
-		ignore.append(username)
 		with open("balance.json", "w") as f:
 			f.write(json.dumps(balance))
-		with open("ignore.txt", "a+") as f:
-			f.write(username+"\n")
 		lock.release()
 		print("Finished voting for:" +username);
 
@@ -108,8 +106,6 @@ def vote_request(sess, id, proxy):
 		print(result)
 		if 'success' in result: 
 			return 10
-		else:
-			return -1
 	except Exception as e:
 		print(e)
 		return -1
