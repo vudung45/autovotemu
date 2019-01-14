@@ -36,7 +36,7 @@ def get_info(username, password, lock):
 				  "username" :  username,
 				  "password": password,
 				  "server": 'X50'
-				}, timeout=10).text
+				}, proxy, timeout=10).text
 		except Exception as e:
 			print(e)
 			continue
@@ -46,6 +46,7 @@ def get_info(username, password, lock):
 				print("Wrong password/username for account: "+ username)
 				return
 			login = False
+			print(text)
 			print("Login failed account:" + username)
 			time.sleep(2)
 		else:
@@ -67,7 +68,7 @@ n_threads = 10
 print(balance)
 for t in range(0,len(accounts),2 * n_threads):
 	threads = []
-	for i in range(t,min(len(accounts) - 1,t+2*n_threads),2):
+	for i in range(t,min(len(accounts) -1,t+2*n_threads),2):
 			try :
 				if accounts[i] not in balance:
 					thread = threading.Thread(target = get_info, args=(accounts[i],accounts[i+1], lock,))
