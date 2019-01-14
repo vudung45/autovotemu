@@ -5,6 +5,7 @@ import threading
 import time
 from random import choice
 from config import CONFIG
+from utils import login
 accounts = []
 proxies = []
 balance = {}
@@ -24,29 +25,31 @@ with open("proxies.txt") as fo:
 def get_info(username, password, lock):
 	sess = requests.session()
 
-	login = False
 	text = ""
 	print("Get balance for: "+username)
+	login = False
+	proxy = {}
+	if CONFIG.GET_BALANCE.login_proxy:
+		proxy = {'https': choice(proxies)}
 	while not login:
 		try:
-			proxy = {}
-			if CONFIG.VOTE.login_proxy:
-				proxy = {'https': choice(proxies)}
 			text = sess.post('https://globalmu.net/account-panel/login', {
 				  "username" :  username,
 				  "password": password,
 				  "server": 'X50'
-				}, proxy, timeout=10).text
+				}, proxies = proxy, timeout=10).text
+		except KeyboardInterrupt:
+			break
 		except Exception as e:
-			print(e)
+			print("Requests failed, trying again")
+			return False
 			continue
 
 		if "My Credits" not in text:
 			if "Wrong username" in text:
 				print("Wrong password/username for account: "+ username)
-				return
+				return False
 			login = False
-			print(text)
 			print("Login failed account:" + username)
 			time.sleep(2)
 		else:
@@ -56,7 +59,10 @@ def get_info(username, password, lock):
 	regex = r"<span id=\"my_credits\">(.+)</span>"
 	lock.acquire()
 	try:
-		balance[username] = int(re.search(regex,text).group(1))
+		new_balance =  int(re.search(regex,text).group(1).replace(",",""))
+		balance[username] = new_balance
+		print("Account "+username+"  balance: "+str(new_balance))
+
 		with open("balance.json", "w") as f:
 			f.write(json.dumps(balance))
 	except:
@@ -70,11 +76,10 @@ for t in range(0,len(accounts),2 * n_threads):
 	threads = []
 	for i in range(t,min(len(accounts) -1,t+2*n_threads),2):
 			try :
-				if accounts[i] not in balance:
-					thread = threading.Thread(target = get_info, args=(accounts[i],accounts[i+1], lock,))
-					threads.append(thread)
-					thread.start()
-					time.sleep(2)
+				thread = threading.Thread(target = get_info, args=(accounts[i],accounts[i+1], lock,))
+				threads.append(thread)
+				thread.start()
+				time.sleep(2)
 			except KeyboardInterrupt:
 				break
 			except:
