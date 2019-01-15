@@ -56,13 +56,16 @@ def buy_item(username, password, items, ignore, lock):
 			f.write(json.dumps(balance))
 	except:
 		print("fail to upload balance ("+username+")")
+		return -1
+
+
 
 	success = "successfully" in result
 	if success:
 		print("Successfully bought item " + to_buy +" with acc: "+ username)
 		print(sess.post('https://globalmu.net/warehouse/del_item', {
 					  "ajax": 1,
-					  "item_slot": 1
+					  "slot": 1
 					}, proxies = proxy, timeout = 10).text)
 	else:
 		lock.acquire()
@@ -70,7 +73,7 @@ def buy_item(username, password, items, ignore, lock):
 		if "not found" not in result:
 			items.append(to_buy)
 		lock.release()
-		return
+		return -1
 
 
 	return to_buy
@@ -83,15 +86,7 @@ with open("accounts.txt") as fo:
 	for line in lines:
 		accounts += line.split(" ")
 
-def sell_item(username, password, item_slot):
-	sess = requests.session()
-	#login to seller account
-	proxy = {}
-	if CONFIG.SELL_ITEM.use_proxy:
-		proxy = {'https': choice(proxies)}
-	if(not login(username, password,sess, proxy)):
-		return
-
+def sell_item(sess, item_slot):
 	#get dmn_csrf
 	done = False
 	while not done:
@@ -117,7 +112,7 @@ def sell_item(username, password, item_slot):
 				print(proxy)
 			text  = sess.post('https://globalmu.net/warehouse/sell_item', {
 				  "dmn_csrf_protection": dmn_csrf_protection,
-				  "price": 40,
+				  "price": CONFIG.SELL_ITEM.price,
 				  "time": 1,
 				  "char": CONFIG.SELL_ITEM.char_name,
 				  "payment_method": 1,
@@ -130,22 +125,42 @@ def sell_item(username, password, item_slot):
 				break
 			if '"error"'in text or '"success"' in text:
 				item_slot += 1
+			time.sleep(1)
 		except KeyboardInterrupt:
 			break
 		except:
 			print("Trying again...")
+	
+	return item_slot
+
+def get_sell_list(sess):
 	text = sess.get('https://globalmu.net/market/history').text
 	regex = r"https://globalmu.net/market/remove/(......)"
 	start = re.findall(regex,text)
-	return item_slot, start
+	return start
 
 
 
-num_turns = CONFIG.SELL_ITEM.turns
+num_turns = CONFIG.SELL_ITEM.turns if CONFIG.SELL_ITEM.auto_sell else 1
 start_slot = CONFIG.SELL_ITEM.start_slot
+
 while num_turns > 0:
 	num_turns -= 1
-	start_slot, start = sell_item(CONFIG.SELL_ITEM.username, CONFIG.SELL_ITEM.password, start_slot)
+	sess = requests.session() #sellser session
+	#login to seller account
+	proxy = {}
+	if CONFIG.SELL_ITEM.use_proxy:
+		proxy = {'https': choice(proxies)}
+	if(not login(CONFIG.SELL_ITEM.username, CONFIG.SELL_ITEM.password,sess, proxy)):
+		break
+
+	#start auto selling if this is enable
+	if CONFIG.SELL_ITEM.auto_sell:
+		start_slot = sell_item(sess, start_slot)
+
+	#fetch sell items list
+	start = get_sell_list(sess)
+	print(start)
 	lock = threading.Lock()
 	n_threads = 5
 	while len(start) > 0:
@@ -153,7 +168,7 @@ while num_turns > 0:
 		local_ignore = []
 		for i in range(0, min(len(start), n_threads)):
 			for username in balance:
-				if username not in local_ignore and balance[username] >= CONFIG.SELL_ITEM.price :
+				if username not in local_ignore  and username not in ignore and balance[username] >= int(round(CONFIG.SELL_ITEM.price * 1.01)) :
 					acc_idx = accounts.index(username)
 					if acc_idx != -1:
 						thread = threading.Thread(target = buy_item, args=(accounts[acc_idx],accounts[acc_idx+1], start, ignore, lock,))
@@ -165,7 +180,7 @@ while num_turns > 0:
 
 		for thread in threads:
 			thread.start()
-			time.sleep(1)
+			time.sleep(5)
 		for thread in threads:
 			thread.join()
 

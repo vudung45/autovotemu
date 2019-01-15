@@ -122,7 +122,7 @@ for t in range(0,len(accounts),2 * n_threads):
 				thread = threading.Thread(target = vote, args=(accounts[i], accounts[i+1], proxies, lock,))
 				threads.append(thread)
 				thread.start()
-				time.sleep(2)
+				time.sleep(3)
 		except KeyboardInterrupt:
 			break
 		except:

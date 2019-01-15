@@ -13,7 +13,7 @@ def login(username, password, sess, proxy):
 			break
 		except Exception as e:
 			print("Requests failed, trying again")
-			return False
+			time.sleep(2)
 			continue
 
 		if "My Credits" not in text:
