@@ -18,6 +18,10 @@ def login(username, password, sess, proxies, use_proxy = False):
 		except Exception as e:
 			print("Requests failed, trying again")
 			time.sleep(2)
+			proxy = {}
+			if use_proxy:
+				proxy = {'https': choice(proxies)}
+			login = False
 			continue
 
 		if "My Credits" not in text:
