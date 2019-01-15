@@ -70,6 +70,12 @@ def vote(username,password, proxies, lock):
 			#try until succeed
 			success = False
 			while not success and len(proxies) > 0:
+				lock.acquire()
+				while len(proxies) > 0:
+					proxy = proxies.pop(0)
+					if proxy not in black_list:
+						break
+				lock.release()
 				bonus = vote_request(sess,id, proxy)
 				if proxy not in black_list: # add latest proxy if hasnt been added
 					lock.acquire()
@@ -119,7 +125,7 @@ for t in range(0,len(accounts),2 * n_threads):
 				thread = threading.Thread(target = vote, args=(accounts[i], accounts[i+1], proxies, lock,))
 				threads.append(thread)
 				thread.start()
-				time.sleep(3)
+				time.sleep(2)
 		except KeyboardInterrupt:
 			break
 		except:
