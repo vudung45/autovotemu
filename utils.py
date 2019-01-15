@@ -1,5 +1,6 @@
 import requests
 import time
+from random import choice
 def login(username, password, sess, proxies, use_proxy = False):
 	proxy = {}
 	if use_proxy:
