@@ -2,7 +2,7 @@ import requests
 import time
 def login(username, password, sess, proxies, use_proxy = False):
 	proxy = {}
-	if CONFIG.VOTE.login_proxy:
+	if use_proxy:
 		proxy = {'https': choice(proxies)}
 	login = False
 	while not login:
