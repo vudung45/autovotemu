@@ -46,10 +46,7 @@ def vote(username,password, proxies, lock):
 
 
 	#login to account
-	proxy = {}
-	if CONFIG.VOTE.login_proxy:
-		proxy = {'https': choice(proxies)}
-	if(not login(username, password,sess, proxy)):
+	if(not login(username, password,sess, proxies, CONFIG.VOTE.login_proxy)):
 		return
 
 	#finished log in now add this account to ignore
@@ -107,7 +104,7 @@ def vote_request(sess, id, proxy):
 		if 'success' in result: 
 			return 10
 	except Exception as e:
-		print(e)
+		print("Vote request failed... trying again")
 		return -1
 	return 0
 

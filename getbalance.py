@@ -27,10 +27,9 @@ def get_info(username, password, lock):
 
 	text = ""
 	print("Get balance for: "+username)
-	login = False
-	proxy = {}
-	if CONFIG.GET_BALANCE.login_proxy:
-		proxy = {'https': choice(proxies)}
+	#login to account
+	if(not login(username, password,sess, proxies, CONFIG.GET_BALANCE.login_proxy)):
+		return
 	while not login:
 		try:
 			text = sess.post('https://globalmu.net/account-panel/login', {

@@ -25,17 +25,14 @@ def buy_item(username, password, items, ignore, lock):
 	sess = requests.session()
 
 	#login to account
-	proxy = {}
-	if CONFIG.SELL_ITEM.use_proxy:
-		proxy = {'https': choice(proxies)}
-	if(not login(username, password,sess, proxy)):
+	if(not login(username, password,sess, proxies, CONFIG.SELL_ITEM.login_proxy)):
 		return
 
 	done = False
 	while not done:
 		proxy = {}
 		try:
-			if CONFIG.SELL_ITEM.use_proxy:
+			if CONFIG.SELL_ITEM.sell_proxy:
 				proxy = {'https': choice(proxies)}
 			result = sess.post('https://globalmu.net/market/buy/'+str(to_buy), {
 					  "buy_item": 1
@@ -148,11 +145,8 @@ while num_turns > 0:
 	num_turns -= 1
 	sess = requests.session() #sellser session
 	#login to seller account
-	proxy = {}
-	if CONFIG.SELL_ITEM.use_proxy:
-		proxy = {'https': choice(proxies)}
-	if(not login(CONFIG.SELL_ITEM.username, CONFIG.SELL_ITEM.password,sess, proxy)):
-		break
+	if(not login(username, password,sess, proxies, CONFIG.SELL_ITEM.login_proxy)):
+		return
 
 	#start auto selling if this is enable
 	if CONFIG.SELL_ITEM.auto_sell:
