@@ -6,6 +6,7 @@ def login(username, password, sess, proxies, use_proxy = False):
 	if use_proxy:
 		proxy = {'https': choice(proxies)}
 	login = False
+	text = None
 	while not login:
 		try:
 			text = sess.post('https://globalmu.net/account-panel/login', {
@@ -16,7 +17,7 @@ def login(username, password, sess, proxies, use_proxy = False):
 		except KeyboardInterrupt:
 			break
 		except Exception as e:
-			print("Requests failed, trying again")
+			#print("Requests failed, trying again")
 			time.sleep(2)
 			if use_proxy:
 				proxy = {'https': choice(proxies)}
@@ -26,11 +27,10 @@ def login(username, password, sess, proxies, use_proxy = False):
 		if "My Credits" not in text:
 			if "Wrong username" in text:
 				print("Wrong password/username for account: "+ username)
-				return False
+				return None
 			login = False
-			print("Login failed account:" + username)
 			time.sleep(2)
 		else:
 			print("Logged in successfully to account: "+username)
 			login = True
-	return True
+	return text

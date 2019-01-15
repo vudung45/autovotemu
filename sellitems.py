@@ -86,16 +86,22 @@ with open("accounts.txt") as fo:
 def sell_item(sess, item_slot):
 	#get dmn_csrf
 	done = False
+	dmn_csrf_protection = ""
 	while not done:
+		proxy = {}
+		if CONFIG.SELL_ITEM.sell_proxy and len(proxies) > 0:
+				proxy = {"https" : choice(proxies)}
+				print(proxy)
 		try:
-			text = sess.get("https://globalmu.net/warehouse").text
+
+			text = sess.get("https://globalmu.net/warehouse", proxies = proxy).text
 			regex = r"<input type=\"hidden\" name=\"dmn_csrf_protection\" value=\"(.+)\" />"
 			result_find = re.findall(regex,text)
 			dmn_csrf_protection = ""
 			dmn_csrf_protection = result_find[0]
 			print(dmn_csrf_protection)
 			done = True
-			time.sleep(3)
+			time.sleep(CONFIG.SELL_ITEM.sleep_time)
 		except KeyboardInterrupt:
 			break
 		except:
@@ -103,10 +109,10 @@ def sell_item(sess, item_slot):
 
 	while True:
 		proxy = {}
-		try:
-			if CONFIG.SELL_ITEM.use_proxy and len(proxies):
+		if CONFIG.SELL_ITEM.sell_proxy and len(proxies) > 0:
 				proxy = {"https" : choice(proxies)}
 				print(proxy)
+		try:
 			text  = sess.post('https://globalmu.net/warehouse/sell_item', {
 				  "dmn_csrf_protection": dmn_csrf_protection,
 				  "price": CONFIG.SELL_ITEM.price,
@@ -122,20 +128,30 @@ def sell_item(sess, item_slot):
 				break
 			if '"error"'in text or '"success"' in text:
 				item_slot += 1
-			time.sleep(1)
+			time.sleep(CONFIG.SELL_ITEM.sleep_time)
 		except KeyboardInterrupt:
 			break
 		except:
+			time.sleep(1)
 			print("Trying again...")
 	
 	return item_slot
 
-def get_sell_list(sess):
-	text = sess.get('https://globalmu.net/market/history').text
-	regex = r"https://globalmu.net/market/remove/(......)"
-	start = re.findall(regex,text)
-	return start
-
+def get_sell_list(sess, proxies, use_proxy):
+	while True:
+		proxy = {}
+		if use_proxy and len(proxies) > 0:
+			proxy = {'https': choice(proxies)}
+		login = False
+		try:
+			text = sess.get('https://globalmu.net/market/history', proxies = proxy, timeout = 10).text
+			regex = r"https://globalmu.net/market/remove/(......)"
+			start = re.findall(regex,text)
+			return start
+		except:
+			time.sleep(CONFIG.SELL_ITEM.sleep_time)
+			continue
+	return []
 
 
 num_turns = CONFIG.SELL_ITEM.turns if CONFIG.SELL_ITEM.auto_sell else 1
@@ -146,7 +162,7 @@ while num_turns > 0:
 	sess = requests.session() #sellser session
 	#login to seller account
 	if(not login(username, password,sess, proxies, CONFIG.SELL_ITEM.login_proxy)):
-		return
+		break
 
 	#start auto selling if this is enable
 	if CONFIG.SELL_ITEM.auto_sell:
@@ -174,7 +190,7 @@ while num_turns > 0:
 
 		for thread in threads:
 			thread.start()
-			time.sleep(5)
+			time.sleep(CONFIG.SELL_ITEM.sleep_time)
 		for thread in threads:
 			thread.join()
 

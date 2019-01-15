@@ -25,35 +25,12 @@ with open("proxies.txt") as fo:
 def get_info(username, password, lock):
 	sess = requests.session()
 
-	text = ""
 	print("Get balance for: "+username)
 	#login to account
-	if(not login(username, password,sess, proxies, CONFIG.GET_BALANCE.login_proxy)):
+	text = login(username, password,sess, proxies, CONFIG.GET_BALANCE.login_proxy)
+	if text is None:
 		return
-	while not login:
-		try:
-			text = sess.post('https://globalmu.net/account-panel/login', {
-				  "username" :  username,
-				  "password": password,
-				  "server": 'X50'
-				}, proxies = proxy, timeout=10).text
-		except KeyboardInterrupt:
-			break
-		except Exception as e:
-			print("Requests failed, trying again")
-			return False
-			continue
 
-		if "My Credits" not in text:
-			if "Wrong username" in text:
-				print("Wrong password/username for account: "+ username)
-				return False
-			login = False
-			print("Login failed account:" + username)
-			time.sleep(2)
-		else:
-			print("Logged in successfully to account: "+username)
-			login = True
 
 	regex = r"<span id=\"my_credits\">(.+)</span>"
 	lock.acquire()
@@ -78,7 +55,7 @@ for t in range(0,len(accounts),2 * n_threads):
 				thread = threading.Thread(target = get_info, args=(accounts[i],accounts[i+1], lock,))
 				threads.append(thread)
 				thread.start()
-				time.sleep(3)
+				time.sleep(CONFIG.GET_BALANCE.sleep_time)
 			except KeyboardInterrupt:
 				break
 			except:
