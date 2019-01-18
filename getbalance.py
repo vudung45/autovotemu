@@ -46,7 +46,7 @@ def get_info(username, password, lock):
 	lock.release()
 
 lock = threading.Lock()
-n_threads = 10
+n_threads = 20
 print(balance)
 for t in range(0,len(accounts),2 * n_threads):
 	threads = []

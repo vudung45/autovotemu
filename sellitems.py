@@ -37,7 +37,8 @@ def buy_item(username, password, items, ignore, lock):
 			result = sess.post('https://globalmu.net/market/buy/'+str(to_buy), {
 					  "buy_item": 1
 					}, proxies = proxy, timeout = 10).text
-			done = True
+			if "My Credits" in result:
+				done = True
 		except KeyboardInterrupt:
 			break
 		except:
@@ -57,7 +58,7 @@ def buy_item(username, password, items, ignore, lock):
 
 
 
-	success = "successfully" in result
+	success = "successfully" in result or "Item not found in our database" in result
 	if success:
 		print("Successfully bought item " + to_buy +" with acc: "+ username)
 		print(sess.post('https://globalmu.net/warehouse/del_item', {
@@ -65,6 +66,7 @@ def buy_item(username, password, items, ignore, lock):
 					  "slot": 1
 					}, proxies = proxy, timeout = 10).text)
 	else:
+		print("Buying item with acc: " + username +" failed. Trying again with different account.")
 		lock.acquire()
 		ignore.append(username)
 		if "not found" not in result:
@@ -94,10 +96,9 @@ def sell_item(sess, item_slot):
 				print(proxy)
 		try:
 
-			text = sess.get("https://globalmu.net/warehouse", proxies = proxy).text
+			text = sess.get("https://globalmu.net/warehouse", proxies = proxy, timeout=10).text
 			regex = r"<input type=\"hidden\" name=\"dmn_csrf_protection\" value=\"(.+)\" />"
 			result_find = re.findall(regex,text)
-			dmn_csrf_protection = ""
 			dmn_csrf_protection = result_find[0]
 			print(dmn_csrf_protection)
 			done = True
@@ -123,11 +124,12 @@ def sell_item(sess, item_slot):
 				  "slot": item_slot,
 				  "ajax": 1
 				}, proxies = proxy, timeout = 10).text
-			print(text)
 			if "10" in text:
 				break
 			if '"error"'in text or '"success"' in text:
 				item_slot += 1
+			print(text)
+
 			time.sleep(CONFIG.SELL_ITEM.sleep_time)
 		except KeyboardInterrupt:
 			break
@@ -146,6 +148,8 @@ def get_sell_list(sess, proxies, use_proxy):
 		try:
 			text = sess.get('https://globalmu.net/market/history', proxies = proxy, timeout = 10).text
 			regex = r"https://globalmu.net/market/remove/(......)"
+			if "My Credits" not in text:
+				continue
 			start = re.findall(regex,text)
 			return start
 		except:
@@ -161,7 +165,7 @@ while num_turns > 0:
 	num_turns -= 1
 	sess = requests.session() #sellser session
 	#login to seller account
-	if(not login(username, password,sess, proxies, CONFIG.SELL_ITEM.login_proxy)):
+	if(not login(CONFIG.SELL_ITEM.username, CONFIG.SELL_ITEM.password,sess, proxies, CONFIG.SELL_ITEM.login_proxy)):
 		break
 
 	#start auto selling if this is enable
@@ -169,23 +173,28 @@ while num_turns > 0:
 		start_slot = sell_item(sess, start_slot)
 
 	#fetch sell items list
-	start = get_sell_list(sess)
+	start = get_sell_list(sess, proxies, CONFIG.SELL_ITEM.login_proxy)
 	print(start)
 	lock = threading.Lock()
-	n_threads = 5
+	n_threads = 10
 	while len(start) > 0:
 		threads = []
 		local_ignore = []
 		for i in range(0, min(len(start), n_threads)):
 			for username in balance:
 				if username not in local_ignore  and username not in ignore and balance[username] >= int(round(CONFIG.SELL_ITEM.price * 1.01)) :
-					acc_idx = accounts.index(username)
-					if acc_idx != -1:
-						thread = threading.Thread(target = buy_item, args=(accounts[acc_idx],accounts[acc_idx+1], start, ignore, lock,))
-						threads.append(thread)
-						local_ignore.append(username)
+					try:
+						acc_idx = accounts.index(username)
+						if acc_idx != -1:
+							thread = threading.Thread(target = buy_item, args=(accounts[acc_idx],accounts[acc_idx+1], start, ignore, lock,))
+							threads.append(thread)
+							local_ignore.append(username)
+							break
+						else:
+							continue
+					except KeyboardInterrupt:
 						break
-					else:
+					except:
 						continue
 
 		for thread in threads:

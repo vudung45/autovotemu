@@ -48,7 +48,6 @@ def vote(username,password, proxies, lock):
 	#login to account
 	if(not login(username, password,sess, proxies, CONFIG.VOTE.login_proxy)):
 		return
-
 	#finished log in now add this account to ignore
 	lock.acquire()
 	if username not in ignore:
@@ -88,8 +87,9 @@ def vote(username,password, proxies, lock):
 						if proxy not in black_list:
 							break
 					lock.release()
-					time.sleep(1)
+					time.sleep(CONFIG.VOTE.sleep_time)
 					continue
+			time.sleep(CONFIG.VOTE.vote_sleep)
 		lock.acquire()
 		with open("balance.json", "w") as f:
 			f.write(json.dumps(balance))
@@ -113,7 +113,7 @@ def vote_request(sess, id, proxy):
 
 
 lock = threading.Lock()
-n_threads = 5
+n_threads = 20
 for t in range(0,len(accounts),2 * n_threads):
 	threads = []
 	for i in range(t,min(len(accounts) - 1,t+2*n_threads),2):
@@ -122,7 +122,7 @@ for t in range(0,len(accounts),2 * n_threads):
 				thread = threading.Thread(target = vote, args=(accounts[i], accounts[i+1], proxies, lock,))
 				threads.append(thread)
 				thread.start()
-				time.sleep(2)
+				time.sleep(CONFIG.VOTE.sleep_time)
 		except KeyboardInterrupt:
 			break
 		except:
