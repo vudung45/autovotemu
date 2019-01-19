@@ -2,4 +2,5 @@ __pycache__
 *.pyc
 balance.json
 blacklist.txt
-ignore.txtconfig.py
+ignore.txt
+config.py
