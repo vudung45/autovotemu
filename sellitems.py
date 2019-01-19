@@ -182,7 +182,7 @@ while num_turns > 0:
 		local_ignore = []
 		for i in range(0, min(len(start), n_threads)):
 			for username in balance:
-				if username not in local_ignore  and username not in ignore and balance[username] >= int(round(CONFIG.SELL_ITEM.price * 1.01)) :
+				if username not in local_ignore  and username not in ignore and balance[username] >= int(round(CONFIG.SELL_ITEM.price * (1.00 + CONFIG.SELL_ITEM.tax))) :
 					try:
 						acc_idx = accounts.index(username)
 						if acc_idx != -1:
@@ -196,6 +196,8 @@ while num_turns > 0:
 						break
 					except:
 						continue
+			if len(local_ignore) == 0:
+				break
 
 		for thread in threads:
 			thread.start()
