@@ -122,7 +122,7 @@ def sell_item(sess, item_slot, gather_all = False):
 			if CONFIG.SELL_ITEM.gather_all:
 				price_without_tax = balances.pop(0)
 				price = int(price_without_tax / (1 + CONFIG.SELL_ITEM.tax) + 0.5)
-				print("price_without_tax: "+str(price_without_tax)+" -> with tax: "+price)
+				print("price_without_tax: "+str(price_without_tax)+" -> with tax: "+str(price))
 			else:
 				price = CONFIG.SELL_ITEM.price
 			next_item = False
