@@ -1,7 +1,7 @@
 class CONFIG:
 	class SELL_ITEM:
-		username = "davidvu4"
-		password = "cayzen888"
+		username = ""
+		password = ""
 		char_name = "DavidDW"
 		gather_all = True #gather credits from all account ( price not fixed)
 		price = 198
