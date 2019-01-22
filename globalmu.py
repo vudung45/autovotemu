@@ -69,14 +69,14 @@ def vote(username,password, proxies, lock):
 			#try until succeed
 			success = False
 			while not success and len(proxies) > 0:
-				bonus = vote_request(sess,id, proxy)
+				lock.acquire()
 				if proxy not in black_list: # add latest proxy if hasnt been added
-					lock.acquire()
 					black_list.append(proxy)
 					with open("blacklist.txt", "a+") as f:
 						f.write(proxy+"\n")
 						print("Blacklisting: "+proxy)
-					lock.release()
+				lock.release()
+				bonus = vote_request(sess,id, proxy)
 				if bonus != -1:
 					success = True
 					balance[username] += bonus

@@ -3,7 +3,7 @@ from random import shuffle, choice
 import re
 import json
 from config import CONFIG
-from utils import login
+from utils import login, get_listings
 import time
 import threading
 
@@ -16,12 +16,15 @@ with open("balance.json") as fo:
 	balance = json.loads(fo.read())
 
 
+balances = list(balance.values())
+balances.sort(reverse=True)
+print(balances)
 
-def buy_item(username, password, items, ignore, lock):
+def buy_item(username, password, items, item, ignore, lock):
 	lock.acquire()
-	to_buy = items.pop(0)
+	to_buy = item[1]
 	lock.release()
-	print("Buy item: "+str(to_buy) +" with account: "+username)
+	print("Buy item: "+to_buy +" with account: "+username)
 	sess = requests.session()
 
 	#login to account
@@ -29,12 +32,12 @@ def buy_item(username, password, items, ignore, lock):
 		return
 
 	done = False
+	proxy = {}
 	while not done:
-		proxy = {}
 		try:
 			if CONFIG.SELL_ITEM.sell_proxy:
 				proxy = {'https': choice(proxies)}
-			result = sess.post('https://globalmu.net/market/buy/'+str(to_buy), {
+			result = sess.post('https://globalmu.net/market/buy/'+to_buy, {
 					  "buy_item": 1
 					}, proxies = proxy, timeout = 10).text
 			if "My Credits" in result:
@@ -65,12 +68,13 @@ def buy_item(username, password, items, ignore, lock):
 					  "ajax": 1,
 					  "slot": 1
 					}, proxies = proxy, timeout = 10).text)
+		items.remove(item)
 	else:
 		print("Buying item with acc: " + username +" failed. Trying again with different account.")
 		lock.acquire()
 		ignore.append(username)
-		if "not found" not in result:
-			items.append(to_buy)
+		if "not found" in result:
+			items.remove(item)
 		lock.release()
 		return -1
 
@@ -85,10 +89,12 @@ with open("accounts.txt") as fo:
 	for line in lines:
 		accounts += line.split(" ")
 
-def sell_item(sess, item_slot):
+def sell_item(sess, item_slot, gather_all = False):
 	#get dmn_csrf
 	done = False
 	dmn_csrf_protection = ""
+	proxy = {}
+
 	while not done:
 		proxy = {}
 		if CONFIG.SELL_ITEM.sell_proxy and len(proxies) > 0:
@@ -108,15 +114,24 @@ def sell_item(sess, item_slot):
 		except:
 			done = False
 
+	
+	next_item = True
+	price = -1
 	while True:
-		proxy = {}
+		if next_item:
+			if CONFIG.SELL_ITEM.gather_all:
+				price = int(balances.pop(0) / (1 + CONFIG.SELL_ITEM.tax) + 0.5)
+			else:
+				price = CONFIG.SELL_ITEM.price
+			next_item = False
+
 		if CONFIG.SELL_ITEM.sell_proxy and len(proxies) > 0:
 				proxy = {"https" : choice(proxies)}
 				print(proxy)
 		try:
 			text  = sess.post('https://globalmu.net/warehouse/sell_item', {
 				  "dmn_csrf_protection": dmn_csrf_protection,
-				  "price": CONFIG.SELL_ITEM.price,
+				  "price": price,
 				  "time": 1,
 				  "char": CONFIG.SELL_ITEM.char_name,
 				  "payment_method": 1,
@@ -125,8 +140,11 @@ def sell_item(sess, item_slot):
 				  "ajax": 1
 				}, proxies = proxy, timeout = 10).text
 			if "10" in text:
+				if CONFIG.SELL_ITEM.gather_all:
+					balances.insert(0,price)
 				break
 			if '"error"'in text or '"success"' in text:
+				next_item = True
 				item_slot += 1
 			print(text)
 
@@ -147,12 +165,11 @@ def get_sell_list(sess, proxies, use_proxy):
 		login = False
 		try:
 			text = sess.get('https://globalmu.net/market/history', proxies = proxy, timeout = 10).text
-			regex = r"https://globalmu.net/market/remove/(......)"
 			if "My Credits" not in text:
 				continue
-			start = re.findall(regex,text)
-			return start
-		except:
+			return get_listings(text)
+		except Exception as e:
+			print(e)
 			time.sleep(CONFIG.SELL_ITEM.sleep_time)
 			continue
 	return []
@@ -173,20 +190,22 @@ while num_turns > 0:
 		start_slot = sell_item(sess, start_slot)
 
 	#fetch sell items list
-	start = get_sell_list(sess, proxies, CONFIG.SELL_ITEM.login_proxy)
-	print(start)
+	items = get_sell_list(sess, proxies, CONFIG.SELL_ITEM.login_proxy)
+	items.sort(key=lambda k : k[0], reverse=True)
+	print(items)
 	lock = threading.Lock()
 	n_threads = 10
-	while len(start) > 0:
+	while len(items) > 0:
 		threads = []
 		local_ignore = []
-		for i in range(0, min(len(start), n_threads)):
+		for i in range(0, min(len(items), n_threads)):
 			for username in balance:
-				if username not in local_ignore  and username not in ignore and balance[username] >= int(round(CONFIG.SELL_ITEM.price * (1.00 + CONFIG.SELL_ITEM.tax))) :
+				if username not in local_ignore  and username not in ignore  and balance[username] >= items[i][0]:
+
 					try:
 						acc_idx = accounts.index(username)
 						if acc_idx != -1:
-							thread = threading.Thread(target = buy_item, args=(accounts[acc_idx],accounts[acc_idx+1], start, ignore, lock,))
+							thread = threading.Thread(target = buy_item, args=(accounts[acc_idx],accounts[acc_idx+1], items, items[i], ignore, lock,))
 							threads.append(thread)
 							local_ignore.append(username)
 							break
