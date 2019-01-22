@@ -117,12 +117,13 @@ def sell_item(sess, item_slot, gather_all = False):
 	
 	next_item = True
 	price = -1
+	price_with_tax = -1
 	while True:
 		if next_item:
 			if CONFIG.SELL_ITEM.gather_all:
 				price_with_tax = balances.pop(0)
 				price = int(price_with_tax / (1 + CONFIG.SELL_ITEM.tax) + 0.5)
-				print("price_with_tax: "+str(price_without_tax)+" -> without tax: "+str(price))
+				print("price_with_tax: "+str(price_with_tax)+" -> without tax: "+str(price))
 			else:
 				price = CONFIG.SELL_ITEM.price
 			next_item = False
@@ -143,7 +144,7 @@ def sell_item(sess, item_slot, gather_all = False):
 				}, proxies = proxy, timeout = 10).text
 			if "10" in text:
 				if CONFIG.SELL_ITEM.gather_all:
-					balances.insert(0,price)
+					balances.insert(0,price_with_tax)
 				break
 			if '"error"'in text or '"success"' in text:
 				next_item = True
