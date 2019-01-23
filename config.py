@@ -1,7 +1,7 @@
 class CONFIG:
 	class SELL_ITEM:
-		username = ""
-		password = ""
+		username = "davidvu4"
+		password = "cayzen888"
 		char_name = "DavidDW"
 		gather_all = True #gather credits from all account ( price not fixed)
 		price = 198
@@ -21,6 +21,10 @@ class CONFIG:
 	class GET_BALANCE:
 		login_proxy = True
 		sleep_time = 1
+	class CHANGE_PASS:
+		login_proxy = True
+		sleep_time = 1
+		new_pass = "autovote"
 # usd15
 # 4ae242
 # usd006
