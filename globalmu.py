@@ -104,12 +104,11 @@ def vote_request(sess, id, proxy):
 				"vote": id
 			}, proxies={'https':proxy}, timeout=10).json()
 		print(result)
-		if 'success' in result: 
+		if 'success' in result or 'error' in result: 
 			return 10
 	except Exception as e:
 		print("Vote request failed... trying again")
-		return -1
-	return 0
+	return -1
 
 
 lock = threading.Lock()

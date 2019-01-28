@@ -64,11 +64,14 @@ def buy_item(username, password, items, item, ignore, lock):
 	success = "successfully" in result or "Item not found in our database" in result
 	if success:
 		print("Successfully bought item " + to_buy +" with acc: "+ username)
-		print(sess.post('https://globalmu.net/warehouse/del_item', {
-					  "ajax": 1,
-					  "slot": 1
-					}, proxies = proxy, timeout = 10).text)
-		items.remove(item)
+		try:
+			print(sess.post('https://globalmu.net/warehouse/del_item', {
+						  "ajax": 1,
+						  "slot": 1
+						}, proxies = proxy, timeout = 10).text)
+			items.remove(item)
+		except:
+			print("")
 	else:
 		print("Buying item with acc: " + username +" failed. Trying again with different account.")
 		lock.acquire()
@@ -146,7 +149,7 @@ def sell_item(sess, item_slot, gather_all = False):
 				if CONFIG.SELL_ITEM.gather_all:
 					balances.insert(0,price_with_tax)
 				break
-			if '"error"'in text or '"success"' in text:
+			if 'error' in text or 'success' in text:
 				next_item = True
 				item_slot += 1
 			print(text)

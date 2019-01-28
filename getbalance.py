@@ -32,6 +32,22 @@ def get_info(username, password, lock):
 		return
 
 
+
+	while True:
+		try:
+			proxy = {}
+			if CONFIG.GET_BALANCE.login_proxy:
+				proxy = {"https" : choice(proxies)}
+				print(proxy)
+
+			text = sess.get("https://globalmu.net/",proxies = proxy, timeout=10).text
+			if "My Credits"	in text:
+				break
+		except KeyboardInterrupt:
+			break
+		except:
+			time.sleep(1)
+
 	regex = r"<span id=\"my_credits\">(.+)</span>"
 	lock.acquire()
 	try:
