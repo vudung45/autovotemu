@@ -6,6 +6,9 @@ Auto voting exploit, in order to gain currency advantage, for a stupid MMO calle
 
 ## Features:
  1. Automate voting to gain `[10 credits] * [#of vote links]` per account.
+   
+   ---> I was then able to farm around 80k credits / day (1000 alt accounts), which is equivalent to ~$100 of donation ( Pretty good I think :D)
+    
  2. Implemented "IP Spoofing" through proxies.
  3. Auto sell items to transfer credits ( Quickly gather all farmed credits from alt account to main account).
  
