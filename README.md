@@ -1,6 +1,6 @@
 # autovotemu
 Auto voting exploit, in order to gain currency advantage, for a stupid MMO called MU Online.
-
+(Coded this in like a few hours :(... so formatting was not taken care of lol :D)
 Features:
  1. Automate voting to gain `[10 credits] * [#of vote links]` per account.
  2. Implemented "IP Spoofing" through proxies.
